@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RIFT — Resonant Interference Framework for Transformations</title>
+<meta name="description" content="Exploring the Resonant Interference Framework for Transformations (RIFT). Language modeling through wave-based semantic composition."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020617;--bg2:#0a1229;--bg3:#0f172a;
+  --surface:#1e293b;--border:#334155;--border2:#475569;
+  --text:#f8fafc;--text2:#cbd5e1;--text3:#94a3b8;
+  --accent:#06b6d4;--accent2:#22d3ee;--accent3:#67e8f9;
+  --blue:#3b82f6;--indigo:#6366f1;--slate:#64748b;
+  --glass:rgba(2,6,23,0.55);--gborder:rgba(6,182,212,0.2);--gtop:rgba(6,182,212,0.4);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* CANVAS */
+#riftCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;filter:contrast(1.1) brightness(0.9)}
+
+/* SCROLL PROGRESS */
+#scroll-progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:999;
+  background:linear-gradient(90deg,var(--blue),var(--accent),var(--indigo));
+  transform-origin:left;transform:scaleX(0);transition:transform 0.06s linear}
+
+/* TOP BAR */
+#topbar{position:fixed;top:0;left:0;right:0;height:52px;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;padding:0 48px;
+  background:rgba(2,6,23,0);border-bottom:1px solid transparent;
+  transition:background 0.5s,border-color 0.5s,backdrop-filter 0.5s;pointer-events:none}
+#topbar.scrolled{background:rgba(2,6,23,0.85);backdrop-filter:blur(24px) saturate(1.5);
+  border-bottom-color:var(--border);pointer-events:all}
+.tbl{display:flex;align-items:center;gap:12px}
+.tblogo{font-size:14px;font-weight:900;color:var(--text);letter-spacing:1px;font-family:'JetBrains Mono',monospace}
+.tbsep{width:1px;height:14px;background:var(--border2)}
+.tbdesc{font-size:12px;color:var(--text3);font-weight:500}
+
+/* SIDE NAV */
+#sidenav{position:fixed;right:24px;top:50%;transform:translateY(-50%);
+  z-index:150;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.snav-item{display:flex;align-items:center;gap:12px;cursor:pointer;group}
+.snav-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;
+  opacity:0;transform:translateX(10px);transition:all 0.3s;pointer-events:none}
+.snav-item:hover .snav-label{opacity:1;transform:translateX(0);color:var(--text)}
+.snav-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:all 0.3s;
+  box-shadow:0 0 0 2px transparent;position:relative}
+.snav-item.active .snav-dot{background:var(--accent);transform:scale(1.3);
+  box-shadow:0 0 0 2px var(--bg),0 0 0 4px rgba(6,182,212,0.4)}
+.snav-item.active .snav-label{opacity:1;transform:translateX(0);color:var(--accent)}
+
+/* PAGE CONTENT */
+.page{position:relative;z-index:10}
+
+/* HERO */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:100px 64px 80px;max-width:920px;margin:0 auto}
+.hero-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:36px}
+.eyebrow-line{width:32px;height:1px;background:var(--accent);opacity:0.7}
+.eyebrow-tag{font-size:10px;font-weight:800;letter-spacing:4px;color:var(--accent);text-transform:uppercase}
+.hero-title{font-size:clamp(48px,7vw,84px);font-weight:900;line-height:1.05;
+  letter-spacing:-3px;margin-bottom:32px}
+.hero-title .hi{background:linear-gradient(130deg,var(--accent2) 0%,var(--blue) 60%,var(--indigo) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:18px;color:var(--text2);line-height:1.78;max-width:640px;margin-bottom:40px}
+.hero-links{display:flex;gap:16px;flex-wrap:wrap}
+.btn{padding:12px 24px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:'Inter',sans-serif;border:1px solid;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btnp{background:rgba(6,182,212,0.1);border-color:var(--accent);color:var(--accent3)}
+.btnp:hover{background:var(--accent);color:#fff;box-shadow:0 0 20px rgba(6,182,212,0.4)}
+.btng{background:rgba(30,41,59,0.6);border-color:var(--border2);color:var(--text2)}
+.btng:hover{background:var(--surface);border-color:var(--text3);color:var(--text)}
+
+/* GLASS SECTIONS */
+.gs{padding:80px 40px;max-width:900px;margin:0 auto}
+.gp{background:var(--glass);backdrop-filter:blur(30px) saturate(1.2);
+  -webkit-backdrop-filter:blur(30px) saturate(1.2);border:1px solid var(--border);
+  border-top:1px solid rgba(6,182,212,0.15);border-radius:16px;padding:48px 52px;position:relative;overflow:hidden;
+  box-shadow:0 12px 60px rgba(0,0,0,0.6),0 1px 0 rgba(255,255,255,0.02) inset}
+.gp::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(6,182,212,0.4) 30%,rgba(59,130,246,0.2) 70%,transparent);pointer-events:none}
+.gp+.gp{margin-top:16px}
+
+/* SECTION LABELS */
+.sl-tag{font-size:10px;font-weight:700;letter-spacing:3.5px;color:var(--text3);
+  text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sl-tag::before{content:'';width:20px;height:1px;background:var(--border2)}
+h2{font-size:clamp(24px,3vw,32px);font-weight:800;color:var(--text);line-height:1.15;
+  margin-bottom:18px;letter-spacing:-0.5px}
+h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px;letter-spacing:-0.2px}
+p{color:var(--text2);font-size:16px;line-height:1.75;margin-bottom:16px}
+p:last-child{margin-bottom:0}
+strong{color:var(--text);font-weight:600}
+
+/* CARDS & GRIDS */
+.card{background:rgba(30,41,59,0.4);border:1px solid var(--border);border-radius:12px;
+  padding:24px;margin-bottom:16px}
+.card:last-child{margin-bottom:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* CALLOUTS */
+.cl{display:flex;gap:14px;padding:16px 20px;border-radius:10px;margin:16px 0;
+  background:rgba(30,41,59,0.6);border:1px solid var(--border);border-left:3px solid var(--border2)}
+.cl.g{border-left-color:var(--accent)}
+.cb{flex:1}.cb > strong{display:block;margin-bottom:6px;font-size:14px;font-weight:700;color:var(--text)}
+.cl.g .cb > strong{color:var(--accent3)}
+.cb p{font-size:14px;color:var(--text2);margin:0;line-height:1.6}
+
+/* COMPARATIVE INTERACTIVE VISUAL */
+.vis-container{background:rgba(15,23,42,0.7);border:1px solid var(--border);border-radius:12px;padding:30px;margin:24px 0}
+.vis-header{text-align:center;margin-bottom:24px}
+.vis-split{display:flex;gap:24px;}
+.vis-side{flex:1;background:rgba(30,41,59,0.6);border:1px solid var(--border);border-radius:8px;padding:20px;display:flex;flex-direction:column}
+.vis-side h4{font-size:14px;font-weight:700;color:var(--text);text-align:center;margin-bottom:16px;letter-spacing:0.5px}
+.vs-block{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:12px;margin-bottom:10px;text-align:center;position:relative}
+.vs-block.highlight{border-color:var(--accent);box-shadow:0 0 15px rgba(6,182,212,0.15)}
+.vs-label{font-size:10px;text-transform:uppercase;color:var(--text3);font-weight:700;letter-spacing:1px;margin-bottom:6px}
+.vs-code{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)}
+.vs-desc{font-size:12px;color:var(--text2);text-align:center;margin-top:auto;padding-top:10px;}
+
+/* FLOWCHART */
+.fc-node { background: rgba(30,41,59,0.7); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; flex: 1 1 200px; }
+.fc-node p { font-size: 12px; margin: 0; color: var(--text2); }
+.fc-node strong { display: block; font-size: 13px; margin-bottom: 6px; color: var(--text); }
+.fc-arrow { color: var(--border2); font-size: 20px; display: flex; align-items: center; justify-content: center; }
+
+/* FLOWCHART ANIMATIONS */
+.fc-anim-box { height: 60px; margin-top: 16px; border-top: 1px solid var(--border2); padding-top: 12px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 0 0 6px 6px; }
+
+.anim-tokens { display: flex; gap: 10px; }
+.anim-token { width: 36px; height: 14px; background: var(--border2); border-radius: 4px; animation: pulseToken 1.5s infinite alternate; }
+.anim-token:nth-child(2) { animation-delay: 0.2s; }
+.anim-token:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulseToken { 0% { opacity: 0.3; background: var(--border2); } 100% { opacity: 1; background: var(--accent); box-shadow: 0 0 10px var(--accent); } }
+
+.anim-wave-track { position: absolute; left: 0; width: 200%; height: 20px; background-size: 60px 100%; animation: slideWave 2s linear infinite; opacity: 0.7; }
+@keyframes slideWave { 0% { transform: translateX(0); } 100% { transform: translateX(-60px); } }
+
+.w-s1 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 20' preserveAspectRatio='none'%3E%3Cpath d='M0,10 Q15,0 30,10 T60,10' fill='none' stroke='rgba(6,182,212,0.5)' stroke-width='1.5'/%3E%3C/svg%3E"); top: 12px; animation-duration: 2.5s; }
+.w-s2 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 20' preserveAspectRatio='none'%3E%3Cpath d='M0,10 Q15,0 30,10 T60,10' fill='none' stroke='rgba(34,211,238,0.5)' stroke-width='1.5'/%3E%3C/svg%3E"); top: 22px; animation-duration: 1.8s; }
+.w-s3 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 20' preserveAspectRatio='none'%3E%3Cpath d='M0,10 Q15,0 30,10 T60,10' fill='none' stroke='rgba(59,130,246,0.5)' stroke-width='1.5'/%3E%3C/svg%3E"); top: 32px; animation-duration: 2.2s; }
+
+.w-c1 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 20' preserveAspectRatio='none'%3E%3Cpath d='M0,10 Q12,2 25,12 T50,8 T60,10' fill='none' stroke='rgba(6,182,212,1)' stroke-width='2'/%3E%3C/svg%3E"); top: 22px; opacity:1; filter: drop-shadow(0 0 4px rgba(6,182,212,0.8)); }
+
+.w-fft1 { top: 22px; animation-duration: 1.5s; opacity: 0.8; mix-blend-mode: screen; }
+.w-fft2 { top: 22px; animation-duration: 1.9s; opacity: 0.8; mix-blend-mode: screen; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 20' preserveAspectRatio='none'%3E%3Cpath d='M0,10 Q15,20 30,10 T60,10' fill='none' stroke='rgba(59,130,246,0.8)' stroke-width='1.5'/%3E%3C/svg%3E"); }
+.w-fft3 { top: 22px; animation-duration: 2.3s; opacity: 0.8; mix-blend-mode: screen; }
+
+.anim-brackets { position: absolute; inset: 12px 60px; border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); pointer-events: none; }
+
+.vis-controls{display:flex;justify-content:center;gap:12px;margin-top:24px}
+
+/* TABLES */
+.tw{overflow-x:auto;border-radius:10px;border:1px solid var(--border);margin:20px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead th{background:rgba(15,23,42,0.9);padding:14px 18px;text-align:left;font-size:10px;
+  font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+tbody td{padding:12px 18px;border-bottom:1px solid var(--border);color:var(--text2);
+  font-family:'JetBrains Mono',monospace;font-size:13px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(6,182,212,0.03);color:var(--text)}
+.hl{color:var(--accent3);font-weight:700}
+.hl2{color:var(--blue)}
+
+/* FOOTER */
+#footer{padding:60px 40px;text-align:center;border-top:1px solid var(--border);margin-top:40px;background:var(--bg2)}
+.ft-title{font-size:14px;font-weight:800;letter-spacing:2px;font-family:'JetBrains Mono',monospace;color:var(--text3);margin-bottom:8px}
+.ft-sub{font-size:12px;color:var(--text3)}
+
+@media(max-width:768px){
+  #hero{padding:80px 24px}
+  .gs{padding:60px 24px}
+  .gp{padding:32px 24px}
+  .g2, .vis-split{grid-template-columns:1fr;flex-direction:column}
+  #sidenav{display:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="riftCanvas"></canvas>
+<div id="scroll-progress"></div>
+
+<!-- TOP BAR -->
+<header id="topbar">
+  <div class="tbl">
+    <span class="tblogo">RIFT</span>
+    <div class="tbsep"></div>
+    <span class="tbdesc">Framework for Generation</span>
+  </div>
+</header>
+
+<!-- SIDE NAV -->
+<div id="sidenav"></div>
+
+<div class="page">
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-eyebrow">
+    <div class="eyebrow-line"></div>
+    <div class="eyebrow-tag">Architecture Research</div>
+  </div>
+  <h1 class="hero-title">
+    <span style="color:var(--accent);display:block;font-size:0.6em;letter-spacing:1px;margin-bottom:10px;">RIFT</span>
+    Language as<br/>
+    Semantic <span class="hi">Resonance</span>
+  </h1>
+  <p class="hero-sub">Instead of predicting sentences one discrete token at a time, what if we modeled language like interacting waves? The <strong>Resonant Interference Framework for Transformations (RIFT)</strong> reimagines natural language generation as a process of wave-based semantic composition.</p>
+  <div class="hero-links">
+    <a href="https://zenodo.org/records/16938148" target="_blank" class="btn btnp">Read the Pre-print ↗</a>
+    <a href="https://github.com/niranjan12s/rift" target="_blank" class="btn btng">GitHub Repo ↗</a>
+  </div>
+</section>
+
+<!-- OVERVIEW -->
+<div class="gs" id="overview">
+  <div class="gp">
+    <div class="sl-tag">01. Overview</div>
+    <h2>The Physics of Meaning</h2>
+    <p>Transformers revolutionized AI by using "attention" to let tokens in a sequence reference each other. However, this still treats language as a sequence of isolated, discrete symbols parsed sequentially. </p>
+    <p>The RIFT architecture argues that language is fluid. It builds on the intuition that a sentence is a dynamic system—like ripples in a pond. Rather than relying entirely on pair-wise attention to bind tokens together, RIFT creates sentence-level meaning through wave interference.</p>
+    
+    <div class="cl g" style="margin-top:24px">
+      <div class="cb">
+        <strong>The Core Hypothesis</strong>
+        <p>By mapping tokens into wavelets (with amplitude, frequency, and phase) and allowing them to physically "interfere" with one another, we can encode the structural rhythm and internal resonance of a sentence directly into the math, creating a holistic semantic wave prior to surface generation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="gs" id="architecture">
+  <div class="gp">
+    <div class="sl-tag">02. How it Works</div>
+    <h2>The Generative Pipeline</h2>
+    <p>RIFT introduces a novel approach to composition, distributing parameters into specialized submodules that handle frequency-based reasoning rather than standard opaque attention weights.</p>
+    
+    <div class="g2">
+      <div class="card">
+        <h3>1. Wavelet Emission</h3>
+        <p>Instead of mapping a word to a static vector, each token is mapped to a multi-dimensional wavelet representation, parameterized by amplitude, frequency, and phase.</p>
+      </div>
+      <div class="card">
+        <h3>2. Sentence Composition</h3>
+        <p>The individual token wavelets are aggregated to compose a single, complex sentence-level semantic wave. This wave embodies the distributed meaning of the entire context.</p>
+      </div>
+    </div>
+    <!-- ARCHITECTURE DIAGRAM -->
+    <div style="margin:40px auto; max-width:400px; padding:32px; background:rgba(15,23,42,0.5); border-radius:12px; border:1px solid var(--border);">
+      <h3 style="text-align:center; margin-bottom:24px;">RIFT Flowchart</h3>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+        <div class="fc-node" style="width:100%; text-align:center;">
+          <strong>Tokens</strong><p>Provided as input</p>
+          <div class="fc-anim-box">
+            <div class="anim-tokens"><div class="anim-token"></div><div class="anim-token"></div><div class="anim-token"></div></div>
+          </div>
+        </div>
+        <div class="fc-arrow">↓</div>
+        <div class="fc-node" style="width:100%; text-align:center;">
+          <strong>Wavelet Emitter</strong><p>Emits a wavelet per token</p>
+          <div class="fc-anim-box">
+            <div class="anim-wave-track w-s1"></div>
+            <div class="anim-wave-track w-s2"></div>
+            <div class="anim-wave-track w-s3"></div>
+          </div>
+        </div>
+        <div class="fc-arrow">↓</div>
+        <div class="fc-node" style="width:100%; text-align:center;">
+          <strong>Multi-Head FFT Attention</strong><p>Interference Attention</p>
+          <div class="fc-anim-box">
+            <div class="anim-wave-track w-s1 w-fft1"></div>
+            <div class="anim-wave-track w-s2 w-fft2"></div>
+            <div class="anim-wave-track w-s3 w-fft3"></div>
+          </div>
+        </div>
+        <div class="fc-arrow">↓</div>
+        <div class="fc-node" style="width:100%; text-align:center;">
+          <strong>Sentence Composer</strong><p>Constructs sentence wave</p>
+          <div class="fc-anim-box">
+            <div class="anim-wave-track w-c1"></div>
+          </div>
+        </div>
+        <div class="fc-arrow">↓</div>
+        <div class="fc-node" style="width:100%; text-align:center;">
+          <strong>Semantic Alignment</strong><p>Preserves global semantics</p>
+          <div class="fc-anim-box">
+            <div class="anim-wave-track w-c1"></div>
+            <div class="anim-brackets"></div>
+          </div>
+        </div>
+        <div class="fc-arrow">↓</div>
+        <div class="fc-node" style="width:100%; text-align:center;">
+          <strong>Wave Decomposer</strong><p>Decomposes to wavelets</p>
+          <div class="fc-anim-box">
+            <div class="anim-wave-track w-s1" style="top:22px; animation-duration:1.5s;"></div>
+            <div class="anim-wave-track w-s2" style="top:22px; animation-duration:2.0s;"></div>
+            <div class="anim-wave-track w-s3" style="top:22px; animation-duration:2.5s;"></div>
+          </div>
+        </div>
+        <div class="fc-arrow">↓</div>
+        <div class="fc-node" style="width:100%; text-align:center;">
+          <strong>Token Classifier</strong><p>Classifies wavelets to tokens</p>
+          <div class="fc-anim-box">
+            <div class="anim-tokens"><div class="anim-token" style="background:var(--accent);opacity:1;box-shadow:0 0 10px var(--accent);animation:none;"></div><div class="anim-token" style="background:var(--border2);opacity:0.3;animation:none;"></div><div class="anim-token" style="background:var(--border2);opacity:0.3;animation:none;"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- COMPARATIVE VISUAL -->
+    <div class="vis-container">
+      <div class="vis-header">
+        <h3 style="margin:0;color:var(--accent3)">Interactive: Sequence vs. Resonance</h3>
+        <p style="font-size:13px;color:var(--text3);margin-top:4px">How models comprehend "The rapid AI"</p>
+        <div id="vis-step-title" style="font-size:18px; font-weight:700; color:var(--accent); margin-top:16px;">Step 1: Input Encoding</div>
+      </div>
+      
+      <div class="vis-split">
+        <!-- LEFT: Standard -->
+        <div class="vis-side" id="vis-standard">
+          <h4>Standard Transformer</h4>
+          
+          <div class="vs-block highlight">
+            <div class="vs-label" id="std-label">Static Vectors</div>
+            <div class="vs-code" id="std-code">[The] [rapid] [AI]</div>
+          </div>
+          
+          <div class="vs-desc" id="std-desc">Tokens are mapped to static vector embeddings. They are isolated blocks of data.</div>
+        </div>
+        
+        <!-- RIGHT: RIFT -->
+        <div class="vis-side" id="vis-rift">
+          <h4>RIFT Architecture</h4>
+          
+          <div class="vs-block highlight" style="padding:0; overflow:hidden; border-color:var(--blue); background:transparent;">
+            <div class="vs-label" id="rift-label" style="position:absolute; top:10px; left:0; width:100%; z-index:2; text-align:center;">Wavelet Emitter</div>
+            <canvas id="simCanvas" style="width:100%; height:120px; display:block; background:rgba(15,23,42,0.8); border-radius:6px; border:1px solid var(--border);"></canvas>
+          </div>
+          
+          <div class="vs-desc" id="rift-desc" style="margin-top:16px;">Each token emits a distinct wavelet, parameterized by amplitude, frequency, and phase.</div>
+        </div>
+      </div>
+      
+      <div class="vis-controls" style="display:flex; justify-content:center; gap:16px; align-items:center; margin-top:24px;">
+        <button class="btn btng" id="btn-prev" onclick="prevStep()" disabled>[ ← Previous ]</button>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text3); font-weight:700;" id="step-indicator">Step 1 / 5</div>
+        <button class="btn btnp" id="btn-next" onclick="nextStep()">[ Next → ]</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="gs" id="results">
+  <div class="gp">
+    <div class="sl-tag">03. Exploratory Results</div>
+    <h2>Resilience in Low-Data Regimes</h2>
+    <p>To evaluate RIFT, we compared it against a compact Transformer baseline (roughly ~125k-142k parameters each). The models were subjected to an extreme low-data environment: trained on only 100 sentences with a vocabulary cap of 200 tokens.</p>
+    
+    <div class="cl g">
+      <div class="cb">
+        <strong>The &lt;unk&gt; Collapse</strong>
+        <p>Under these extreme constraints, the standard Transformer completely collapsed, outputting endless streams of unknown tokens and repetitive loops. RIFT, however, avoided this collapse, producing grammatically loose but lexically diverse attempts at structural composition.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>Generation Metric</th>
+            <th>Transformer Baseline</th>
+            <th>RIFT Model</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1-gram Diversity</td>
+            <td>0.0938</td>
+            <td class="hl">0.7775</td>
+          </tr>
+          <tr>
+            <td>3-gram Diversity</td>
+            <td>0.1200</td>
+            <td class="hl">1.0000</td>
+          </tr>
+          <tr>
+            <td>Repetition Score</td>
+            <td class="hl2">0.9902 (High Repetition)</td>
+            <td>0.3925 (Low Repetition)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:13px;color:var(--text3);margin-top:20px;font-style:italic">Note: These metrics reflect specific exploratory runs under constrained environments. Due to GPU compute limitations, we were unable to run standardized large-scale benchmarks like WikiText-2 (WT2). It is well established that Transformers perform poorly in extremely low-data regimes, so these results cannot conclusively prove RIFT is superior to Transformers at any stage. Rather, this serves as an exploration into the feasibility of alternative, structure-driven generative architectures.</p>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer id="footer">
+  <div class="ft-title">RIFT ARCHITECTURE</div>
+  <div class="ft-sub">Research Archive &bull; Pre-print Available</div>
+</footer>
+
+</div><!-- .page -->
+
+<script>
+'use strict';
+
+const SECTIONS = [
+  {id:'hero', label:'Top'},
+  {id:'overview', label:'Overview'},
+  {id:'architecture', label:'Architecture'},
+  {id:'results', label:'Results'}
+];
+
+// --- SIDE NAV SETUP ---
+(function buildNav() {
+  const container = document.getElementById('sidenav');
+  SECTIONS.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'snav-item';
+    el.innerHTML = `<div class="snav-label">${s.label}</div><div class="snav-dot"></div>`;
+    el.onclick = () => document.getElementById(s.id).scrollIntoView({behavior:'smooth'});
+    container.appendChild(el);
+  });
+})();
+
+let activeIdx = -1;
+window.addEventListener('scroll', () => {
+  const sy = window.scrollY;
+  const total = document.body.scrollHeight - window.innerHeight;
+  const scrollFraction = Math.min(1, sy / total || 0);
+  document.getElementById('scroll-progress').style.transform = `scaleX(${scrollFraction})`;
+  document.getElementById('topbar').classList.toggle('scrolled', sy > 60);
+
+  let cur = 0;
+  SECTIONS.forEach((s, i) => {
+    const el = document.getElementById(s.id);
+    if (el && el.getBoundingClientRect().top <= 200) cur = i;
+  });
+  
+  if (cur !== activeIdx) {
+    activeIdx = cur;
+    document.querySelectorAll('.snav-item').forEach((el, i) => {
+      el.classList.toggle('active', i === activeIdx);
+    });
+  }
+}, {passive: true});
+window.dispatchEvent(new Event('scroll'));
+
+// --- INTERACTIVE VIS ---
+let simCanvas, sCtx, simTime = 0;
+let currentStep = 0;
+let mergeAmt = 0; // 0 = separated, 1 = merged
+
+const STEPS = [
+  {
+    title: "Step 1: Input Encoding",
+    stdLabel: "Static Vectors", stdCode: "[The] [rapid] [AI]",
+    stdDesc: "Tokens are mapped to static vector embeddings. They are treated as isolated blocks of data.",
+    riftLabel: "Wavelet Emitter",
+    riftDesc: "Each token emits a distinct wavelet, parameterized by amplitude, frequency, and phase.",
+    targetMerge: 0
+  },
+  {
+    title: "Step 2: Composition",
+    stdLabel: "Sequential Attention", stdCode: "Softmax(Q × Kᵀ)",
+    stdDesc: "Attention creates pairwise links between tokens, trying to bind the static vectors together sequentially.",
+    riftLabel: "FFT Interference",
+    riftDesc: "Wavelets naturally interfere, mathematically summing to compose a holistic, global sentence wave.",
+    targetMerge: 1
+  },
+  {
+    title: "Step 3: Semantic Processing",
+    stdLabel: "Feed-Forward Network", stdCode: "MLP Layers",
+    stdDesc: "Data passes through feed-forward layers to refine the sequential representations.",
+    riftLabel: "Semantic Alignment",
+    riftDesc: "The global sentence wave is aligned and regularized to preserve overarching semantics.",
+    targetMerge: 1
+  },
+  {
+    title: "Step 4: Decoding",
+    stdLabel: "Next-Token Logits", stdCode: "Predicting Token 4...",
+    stdDesc: "The model calculates probabilities for the next possible discrete token in the sequence.",
+    riftLabel: "Wave Decomposer",
+    riftDesc: "The complex sentence wave is decomposed back into individual constituent wavelets.",
+    targetMerge: 0
+  },
+  {
+    title: "Step 5: Output",
+    stdLabel: "Sequence Appended", stdCode: "[The] [rapid] [AI] [is]",
+    stdDesc: "The predicted token is appended, and the entire sequential process starts over again.",
+    riftLabel: "Token Classifier",
+    riftDesc: "The decomposed wavelets are finally classified and mapped back into discrete tokens.",
+    targetMerge: 0
+  }
+];
+
+function initSim() {
+  simCanvas = document.getElementById('simCanvas');
+  if(!simCanvas) return;
+  sCtx = simCanvas.getContext('2d');
+  simCanvas.width = simCanvas.parentElement.clientWidth;
+  simCanvas.height = 120;
+  drawSim();
+  updateUI();
+}
+
+function updateUI() {
+  const s = STEPS[currentStep];
+  document.getElementById('vis-step-title').textContent = s.title;
+  document.getElementById('std-label').textContent = s.stdLabel;
+  document.getElementById('std-code').textContent = s.stdCode;
+  document.getElementById('std-desc').textContent = s.stdDesc;
+  document.getElementById('rift-label').textContent = s.riftLabel;
+  document.getElementById('rift-desc').textContent = s.riftDesc;
+  document.getElementById('step-indicator').textContent = `Step ${currentStep + 1} / 5`;
+  
+  document.getElementById('btn-prev').disabled = (currentStep === 0);
+  document.getElementById('btn-next').disabled = (currentStep === STEPS.length - 1);
+}
+
+function nextStep() {
+  if (currentStep < STEPS.length - 1) { currentStep++; updateUI(); }
+}
+function prevStep() {
+  if (currentStep > 0) { currentStep--; updateUI(); }
+}
+
+function drawSim() {
+  sCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+  const W = simCanvas.width;
+  const H = simCanvas.height;
+  
+  const target = STEPS[currentStep].targetMerge;
+  if (mergeAmt < target) mergeAmt = Math.min(target, mergeAmt + 0.05);
+  if (mergeAmt > target) mergeAmt = Math.max(target, mergeAmt - 0.05);
+  
+  // Draw separated waves
+  if (mergeAmt < 1) {
+    sCtx.globalAlpha = 1 - mergeAmt;
+    for(let i=0; i<3; i++) {
+      sCtx.beginPath();
+      const freq = 0.03 + i*0.02;
+      const yOffset = H/2 + (i*24 - 24);
+      for(let x=0; x<W; x++) {
+        const y = yOffset + Math.sin(x*freq + simTime*0.05) * 8;
+        if(x===0) sCtx.moveTo(x,y); else sCtx.lineTo(x,y);
+      }
+      sCtx.strokeStyle = `hsla(${190 + i*30}, 100%, 60%, 0.6)`;
+      sCtx.lineWidth = 2;
+      sCtx.stroke();
+    }
+  }
+  
+  // Draw interference wave
+  if (mergeAmt > 0) {
+    sCtx.globalAlpha = mergeAmt;
+    sCtx.beginPath();
+    for(let x=0; x<W; x++) {
+      const y1 = Math.sin(x*0.03 + simTime*0.05) * 8;
+      const y2 = Math.sin(x*0.05 + simTime*0.05) * 8;
+      const y3 = Math.sin(x*0.07 + simTime*0.05) * 8;
+      const y = H/2 + y1 + y2 + y3;
+      if(x===0) sCtx.moveTo(x,y); else sCtx.lineTo(x,y);
+    }
+    sCtx.strokeStyle = 'rgba(6, 182, 212, 1)';
+    sCtx.lineWidth = 3;
+    sCtx.stroke();
+  }
+  
+  sCtx.globalAlpha = 1;
+  simTime++;
+  requestAnimationFrame(drawSim);
+}
+
+window.addEventListener('load', initSim);
+
+// --- WAVE CANVAS BACKGROUND ---
+(function initCanvas() {
+  const canvas = document.getElementById('riftCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let time = 0;
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    
+    // Draw interfering waves
+    for(let w = 0; w < 5; w++) {
+      ctx.beginPath();
+      const frequency = 0.002 + (w * 0.001);
+      const amplitude = 50 + (w * 20);
+      const speed = 0.01 + (w * 0.005);
+      const yOffset = H/2 + (w * 30 - 60);
+      
+      for(let x = 0; x < W; x += 10) {
+        // Interference equation: base sine + time shifted sine
+        const y = yOffset + Math.sin(x * frequency + time * speed) * amplitude 
+                          + Math.sin(x * (frequency*1.5) - time * (speed*0.5)) * (amplitude * 0.5);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      
+      const colors = ['rgba(6, 182, 212, 0.1)', 'rgba(34, 211, 238, 0.15)', 'rgba(59, 130, 246, 0.1)', 'rgba(99, 102, 241, 0.05)', 'rgba(255,255,255,0.05)'];
+      ctx.strokeStyle = colors[w];
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    time += 1;
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+</body>
+</html>
